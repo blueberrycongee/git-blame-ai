@@ -243,13 +243,12 @@
     const existingToolbar = document.querySelector(`[data-ghbs-id="${TOOLBAR_ID}"]`);
     const toolbar = ui.renderToolbar(existingToolbar, {
       id: TOOLBAR_ID,
-      title: isPrPage ? 'git-blame-ai · Pull Requests 分组' : 'git-blame-ai · Issues 分组',
       mode,
       counts,
       extraSummary:
         totalBots > 0
-          ? `当前页检测到 ${counts.aiAgent} 条 AI Agent · ${counts.bot} 条 Bot`
-          : '当前页全部由人类发起',
+          ? `Bot / Agent ${totalBots} 条`
+          : '',
       compact: false,
       onModeChange
     });

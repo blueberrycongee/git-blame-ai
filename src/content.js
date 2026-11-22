@@ -10,6 +10,7 @@
   let isRendering = false;
   let debounceTimer = null;
   let latestReport = null;
+  let activeObserver = null;
 
   function getModeForView(viewName) {
     return currentModeByView[viewName] || currentSettings.defaultMode || 'split';
@@ -47,7 +48,8 @@
             settings: currentSettings,
             mode: getModeForView(name),
             onModeChange: (nextMode) => handleModeChange(name, nextMode),
-            onToggleOverride: handleToggleOverride
+            onToggleOverride: handleToggleOverride,
+            onRequestRerender: () => scheduleRender(0)
           });
           if (result) reports.push(result);
         } else {
@@ -65,6 +67,7 @@
       // 保持静默，不影响 GitHub 页面正常运行
       console.debug('[GHBS] render error:', err);
     } finally {
+      if (activeObserver) activeObserver.takeRecords();
       isRendering = false;
     }
   }
@@ -77,23 +80,13 @@
     }, typeof delayMs === 'number' ? delayMs : 120);
   }
 
-  function isMutationOwnedByUs(mutations) {
+  function isMutationRelevant(mutations) {
     for (const m of mutations) {
-      if (m.target && m.target.nodeType === 1) {
-        if (m.target.dataset && m.target.dataset.ghbsOwned === 'true') continue;
-        if (m.target.closest && m.target.closest('.ghbs-toolbar, [data-ghbs-owned="true"]')) continue;
-      }
-      if (m.type === 'childList') {
-        const externalAdded = Array.from(m.addedNodes).some(
-          (n) => n.nodeType === 1 && !(n.dataset && n.dataset.ghbsOwned === 'true') && !n.classList.contains('ghbs-toolbar')
-        );
-        const externalRemoved = Array.from(m.removedNodes).some(
-          (n) => n.nodeType === 1 && !(n.dataset && n.dataset.ghbsOwned === 'true') && !n.classList.contains('ghbs-toolbar')
-        );
-        if (externalAdded || externalRemoved) return false;
+      if (m.type === 'childList' && (m.addedNodes.length > 0 || m.removedNodes.length > 0)) {
+        return true;
       }
     }
-    return true;
+    return false;
   }
 
   function setupObservers() {
@@ -107,11 +100,12 @@
         return;
       }
 
-      if (!isMutationOwnedByUs(mutations)) {
+      if (isMutationRelevant(mutations)) {
         scheduleRender(160);
       }
     });
 
+    activeObserver = observer;
     observer.observe(document.documentElement, {
       childList: true,
       subtree: true

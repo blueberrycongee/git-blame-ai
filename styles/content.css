@@ -1,199 +1,110 @@
-/* GitHub Human & Agent Split - GitHub Primer Native Styles */
+/* git-blame-ai — Minimalist Monochrome GitHub-Native Styles */
 
 :root {
   --ghbs-bg: var(--bgColor-muted, var(--color-canvas-subtle, #f6f8fa));
   --ghbs-bg-card: var(--bgColor-default, var(--color-canvas-default, #ffffff));
   --ghbs-border: var(--borderColor-default, var(--color-border-default, #d0d7de));
+  --ghbs-border-muted: var(--borderColor-muted, var(--color-border-muted, #d8dee4));
   --ghbs-fg: var(--fgColor-default, var(--color-fg-default, #1f2328));
   --ghbs-fg-muted: var(--fgColor-muted, var(--color-fg-muted, #656d76));
-
-  --ghbs-human-fg: var(--fgColor-success, #1a7f37);
-  --ghbs-human-bg: var(--bgColor-success-muted, rgba(45, 164, 78, 0.12));
-  --ghbs-human-border: var(--borderColor-success-muted, rgba(45, 164, 78, 0.35));
-
-  --ghbs-ai-fg: var(--fgColor-done, #8250df);
-  --ghbs-ai-bg: var(--bgColor-done-muted, rgba(130, 80, 223, 0.13));
-  --ghbs-ai-border: var(--borderColor-done-muted, rgba(130, 80, 223, 0.38));
-
-  --ghbs-bot-fg: var(--fgColor-attention, #9a6700);
-  --ghbs-bot-bg: var(--bgColor-attention-muted, rgba(191, 135, 0, 0.14));
-  --ghbs-bot-border: var(--borderColor-attention-muted, rgba(191, 135, 0, 0.38));
-
-  --ghbs-assisted-fg: var(--fgColor-accent, #0969da);
-  --ghbs-assisted-bg: var(--bgColor-accent-muted, rgba(9, 105, 218, 0.12));
-  --ghbs-assisted-border: var(--borderColor-accent-muted, rgba(9, 105, 218, 0.35));
 }
 
 .ghbs-hidden {
   display: none !important;
 }
 
-/* ===== 工具栏 ===== */
+/* ===== 极简顶部控制栏 ===== */
 .ghbs-toolbar {
-  margin: 0 0 14px 0;
-  padding: 10px 14px;
-  border: 1px solid var(--ghbs-border);
-  border-radius: 6px;
-  background: var(--ghbs-bg);
+  margin: 0 0 12px 0;
+  padding: 0;
   color: var(--ghbs-fg);
   font-size: 12px;
   line-height: 1.4;
 }
 
+.ghbs-toolbar[data-ghbs-id="ghbs-contributors-toolbar"] {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  padding: 10px 0;
+  margin-bottom: 8px;
+  background: var(--ghbs-bg-card);
+  border-bottom: 1px solid var(--ghbs-border-muted);
+}
+
 .ghbs-toolbar--compact {
   margin: 8px 0 10px 0;
-  padding: 6px 8px;
 }
 
 .ghbs-toolbar-row {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+  justify-content: space-between;
   gap: 8px 12px;
-}
-
-.ghbs-toolbar-title {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-weight: 600;
-  font-size: 13px;
-  color: var(--ghbs-fg);
-  margin-right: 4px;
-}
-
-.ghbs-toolbar-title .ghbs-icon {
-  color: var(--ghbs-ai-fg);
 }
 
 .ghbs-tabs {
   display: inline-flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 4px;
+  gap: 2px;
   padding: 2px;
   border-radius: 6px;
-  background: var(--ghbs-bg-card);
-  border: 1px solid var(--ghbs-border);
+  background: var(--ghbs-bg);
+  border: 1px solid var(--ghbs-border-muted);
 }
 
 .ghbs-tab {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 4px 9px;
-  border: none;
+  padding: 4px 10px;
+  border: 1px solid transparent;
   border-radius: 4px;
   background: transparent;
   color: var(--ghbs-fg-muted);
   font-size: 12px;
   font-weight: 500;
   cursor: pointer;
-  transition: background 0.12s ease, color 0.12s ease;
+  transition: color 0.12s ease, background 0.12s ease, border-color 0.12s ease;
 }
 
 .ghbs-toolbar--compact .ghbs-tab {
   padding: 2px 6px;
   font-size: 11px;
-  gap: 3px;
+  gap: 4px;
 }
 
 .ghbs-tab:hover {
   color: var(--ghbs-fg);
-  background: var(--ghbs-bg);
 }
 
 .ghbs-tab.is-active {
-  background: var(--ghbs-fg);
-  color: var(--ghbs-bg-card);
+  background: var(--ghbs-bg-card);
+  color: var(--ghbs-fg);
+  border-color: var(--ghbs-border);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
 .ghbs-tab-count {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 18px;
-  height: 16px;
-  padding: 0 5px;
-  border-radius: 999px;
   font-size: 11px;
-  font-weight: 600;
-  background: rgba(128, 128, 128, 0.16);
-  color: inherit;
-}
-
-.ghbs-tab.is-active .ghbs-tab-count {
-  background: rgba(255, 255, 255, 0.22);
-  color: var(--ghbs-bg-card);
-}
-
-.ghbs-tab:not(.is-active) .ghbs-tab-count--bot {
-  background: var(--ghbs-ai-bg);
-  color: var(--ghbs-ai-fg);
-}
-
-.ghbs-tab:not(.is-active) .ghbs-tab-count--human {
-  background: var(--ghbs-human-bg);
-  color: var(--ghbs-human-fg);
-}
-
-.ghbs-toolbar-summary {
-  margin-left: auto;
-  font-size: 12px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
   color: var(--ghbs-fg-muted);
 }
 
-.ghbs-assisted-summary {
-  margin-left: auto;
-  padding: 2px 8px;
-  border-radius: 999px;
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--ghbs-assisted-fg);
-  background: var(--ghbs-assisted-bg);
-  border: 1px solid var(--ghbs-assisted-border);
+.ghbs-tab.is-active .ghbs-tab-count {
+  color: var(--ghbs-fg);
 }
 
-/* 比例条 */
-.ghbs-ratio-bar {
-  display: flex;
-  width: 100%;
-  height: 5px;
-  margin-top: 8px;
-  border-radius: 999px;
-  overflow: hidden;
-  background: rgba(128, 128, 128, 0.15);
-  gap: 1px;
+.ghbs-toolbar-summary {
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ghbs-fg-muted);
 }
 
-.ghbs-toolbar--compact .ghbs-ratio-bar {
-  height: 4px;
-  margin-top: 6px;
-}
-
-.ghbs-ratio-seg {
-  display: block;
-  height: 100%;
-  transition: width 0.25s ease;
-}
-
-.ghbs-ratio-seg--human {
-  background: var(--ghbs-human-fg);
-}
-
-.ghbs-ratio-seg--assisted {
-  background: var(--ghbs-assisted-fg);
-}
-
-.ghbs-ratio-seg--ai {
-  background: var(--ghbs-ai-fg);
-}
-
-.ghbs-ratio-seg--bot {
-  background: var(--ghbs-bot-fg);
-}
-
-/* ===== 分组标题 ===== */
+/* ===== 极简细线分组头 ===== */
 .ghbs-section-header {
   list-style: none !important;
   display: flex;
@@ -202,97 +113,77 @@
   justify-content: space-between;
   gap: 6px 12px;
   width: 100%;
-  padding: 8px 12px;
-  margin: 6px 0 2px 0;
-  border-radius: 6px;
-  border: 1px solid var(--ghbs-border);
-  background: var(--ghbs-bg);
-  font-size: 13px;
+  padding: 10px 2px 6px 2px;
+  margin: 4px 0 0 0;
+  border: none;
+  border-bottom: 1px solid var(--ghbs-border-muted);
+  background: transparent;
+  font-size: 12px;
   font-weight: 600;
   color: var(--ghbs-fg);
   box-sizing: border-box;
 }
 
 .ghbs-section-header--compact {
-  padding: 4px 8px;
-  margin: 4px 0 4px 0;
+  padding: 6px 12px;
+  margin: 0;
   font-size: 11px;
-  border-radius: 5px;
+  background: var(--ghbs-bg);
+  border-bottom: 1px solid var(--ghbs-border-muted);
 }
 
-.ghbs-section-header--human {
-  border-left: 3px solid var(--ghbs-human-fg);
-}
-
-.ghbs-section-header--ai-agent {
-  border-left: 3px solid var(--ghbs-ai-fg);
-}
-
-.ghbs-section-header--bot {
-  border-left: 3px solid var(--ghbs-bot-fg);
-}
-
-.ghbs-section-header--assisted {
-  border-left: 3px solid var(--ghbs-assisted-fg);
-}
-
-.ghbs-section-header-left {
+.ghbs-section-header-left,
+.ghbs-section-header-right {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-}
-
-.ghbs-section-header--human .ghbs-icon {
-  color: var(--ghbs-human-fg);
-}
-
-.ghbs-section-header--ai-agent .ghbs-icon {
-  color: var(--ghbs-ai-fg);
-}
-
-.ghbs-section-header--bot .ghbs-icon {
-  color: var(--ghbs-bot-fg);
-}
-
-.ghbs-section-header--assisted .ghbs-icon {
-  color: var(--ghbs-assisted-fg);
+  gap: 8px;
 }
 
 .ghbs-section-count {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 20px;
-  padding: 0 6px;
-  border-radius: 999px;
   font-size: 11px;
-  font-weight: 600;
-  background: var(--ghbs-bg-card);
-  border: 1px solid var(--ghbs-border);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
   color: var(--ghbs-fg-muted);
 }
 
 .ghbs-section-detail {
   font-size: 11px;
   font-weight: 400;
+  font-variant-numeric: tabular-nums;
   color: var(--ghbs-fg-muted);
+}
+
+.ghbs-collapse-btn {
+  padding: 1px 7px;
+  border-radius: 4px;
+  border: 1px solid var(--ghbs-border-muted);
+  background: transparent;
+  color: var(--ghbs-fg-muted);
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 0.12s ease, border-color 0.12s ease;
+}
+
+.ghbs-collapse-btn:hover {
+  color: var(--ghbs-fg);
+  border-color: var(--ghbs-border);
 }
 
 .ghbs-empty-note {
   list-style: none !important;
   grid-column: 1 / -1;
   flex-basis: 100%;
-  padding: 12px 14px;
-  border: 1px dashed var(--ghbs-border);
-  border-radius: 6px;
+  padding: 16px 12px;
   color: var(--ghbs-fg-muted);
   font-size: 12px;
   text-align: center;
 }
 
 .ghbs-empty-note--compact {
-  padding: 6px 8px;
+  padding: 8px 4px;
   font-size: 11px;
+  text-align: left;
 }
 
 /* ===== /graphs/contributors 网格布局（兼容 2026 React ul 与旧版 ol） ===== */
@@ -332,16 +223,6 @@ ol.ghbs-contrib-list > li.ghbs-item {
   box-sizing: border-box !important;
 }
 
-ul.ghbs-contrib-list > li.ghbs-item--ai-agent [class*="ChartCardContainerBordered"],
-ol.ghbs-contrib-list > li.ghbs-item--ai-agent {
-  border-color: var(--ghbs-ai-border) !important;
-}
-
-ul.ghbs-contrib-list > li.ghbs-item--bot [class*="ChartCardContainerBordered"],
-ol.ghbs-contrib-list > li.ghbs-item--bot {
-  border-color: var(--ghbs-bot-border) !important;
-}
-
 /* ===== 仓库侧边栏 Contributors ===== */
 ul.ghbs-sidebar-list {
   display: flex !important;
@@ -361,14 +242,8 @@ ul.ghbs-sidebar-list.ghbs-sidebar-grid {
 ul.ghbs-sidebar-list > li.ghbs-section-header {
   flex: 0 0 100% !important;
   width: 100% !important;
-}
-
-ul.ghbs-sidebar-grid > li.ghbs-sidebar-item.ghbs-item--ai-agent img.avatar {
-  box-shadow: 0 0 0 2px var(--ghbs-ai-fg);
-}
-
-ul.ghbs-sidebar-grid > li.ghbs-sidebar-item.ghbs-item--bot img.avatar {
-  box-shadow: 0 0 0 2px var(--ghbs-bot-fg);
+  padding: 6px 0 4px 0;
+  background: transparent;
 }
 
 /* ===== Commits & PR/Issues 列表 ===== */
@@ -378,29 +253,7 @@ ul.ghbs-sidebar-grid > li.ghbs-sidebar-item.ghbs-item--bot img.avatar {
   flex-direction: column !important;
 }
 
-.ghbs-commit-group-list > li.ghbs-section-header,
-.ghbs-issue-list > .ghbs-section-header {
-  margin: 0 !important;
-  border-radius: 0 !important;
-  border-left-width: 3px !important;
-  border-right: none !important;
-}
-
-.ghbs-commit-item.ghbs-item--ai-agent,
-.ghbs-issue-item.ghbs-item--ai-agent {
-  box-shadow: inset 3px 0 0 var(--ghbs-ai-fg);
-}
-
-.ghbs-commit-item.ghbs-item--bot,
-.ghbs-issue-item.ghbs-item--bot {
-  box-shadow: inset 3px 0 0 var(--ghbs-bot-fg);
-}
-
-.ghbs-commit-item.ghbs-item--assisted {
-  box-shadow: inset 3px 0 0 var(--ghbs-assisted-fg);
-}
-
-/* ===== 行内徽章 & 快速覆写按钮 ===== */
+/* ===== 极简单色行内徽章 & 悬停覆写按钮 ===== */
 .ghbs-badge-wrap {
   display: inline-flex;
   align-items: center;
@@ -416,49 +269,22 @@ ul.ghbs-sidebar-grid > li.ghbs-sidebar-item.ghbs-item--bot img.avatar {
 .ghbs-badge {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
-  padding: 1px 6px;
+  padding: 0 6px;
   border-radius: 999px;
   font-size: 11px;
-  font-weight: 600;
-  line-height: 1.5;
+  font-weight: 500;
+  line-height: 18px;
   white-space: nowrap;
-  border: 1px solid transparent;
-}
-
-.ghbs-badge .ghbs-icon {
-  width: 11px;
-  height: 11px;
-}
-
-.ghbs-badge--ai-agent {
-  color: var(--ghbs-ai-fg);
-  background: var(--ghbs-ai-bg);
-  border-color: var(--ghbs-ai-border);
-}
-
-.ghbs-badge--bot {
-  color: var(--ghbs-bot-fg);
-  background: var(--ghbs-bot-bg);
-  border-color: var(--ghbs-bot-border);
-}
-
-.ghbs-badge--assisted {
-  color: var(--ghbs-assisted-fg);
-  background: var(--ghbs-assisted-bg);
-  border-color: var(--ghbs-assisted-border);
-}
-
-.ghbs-group-rank {
-  display: inline-flex;
-  align-items: center;
-  padding: 0 5px;
-  border-radius: 4px;
-  font-size: 10px;
-  font-weight: 600;
   color: var(--ghbs-fg-muted);
   background: var(--ghbs-bg);
   border: 1px solid var(--ghbs-border);
+}
+
+.ghbs-group-rank {
+  font-size: 11px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: var(--ghbs-fg-muted);
 }
 
 .ghbs-override-btn {

@@ -296,10 +296,9 @@
 
     const toolbar = ui.renderToolbar(existingToolbar, {
       id: TOOLBAR_ID,
-      title: 'Commits 贡献来源',
       mode,
       counts,
-      extraSummary: summaryParts.length > 0 ? summaryParts.join(' · ') : '当前页全部为人类提交',
+      extraSummary: summaryParts.length > 0 ? summaryParts.join(' · ') : '',
       compact: false,
       onModeChange
     });

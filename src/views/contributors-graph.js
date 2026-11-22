@@ -4,12 +4,14 @@
   const PATH_RE = /^\/[^/]+\/[^/]+\/graphs\/contributors\/?$/;
   const TOOLBAR_ID = 'ghbs-contributors-toolbar';
 
+  // 分组模式下允许折叠 Bot 区域（默认展开，且位于上方，避免人类不断懒加载把 Bot 顶到底部）
+  let botsCollapsed = false;
+
   function matches(pathname) {
     return PATH_RE.test(pathname);
   }
 
   function findListContainer() {
-    // 1. 2026 新版 React Contributors 页面（ul[class*="chartList"] 或包含多个 commits?author= 卡片的列表）
     const reactList = document.querySelector('ul[class*="chartList__"]');
     if (reactList) return reactList;
 
@@ -28,7 +30,6 @@
       }
     }
 
-    // 2. 旧版 GitHub Contributors DOM
     return (
       document.querySelector('#contributors ol.contrib-data') ||
       document.querySelector('ol.contrib-data') ||
@@ -46,7 +47,6 @@
   }
 
   function extractContributorSignals(card) {
-    // 优先取卡片标题里的用户名链接（2026 新版为 h2 a，旧版为 h3 a.aname）
     const nameLink =
       card.querySelector('h2 a[href]') ||
       card.querySelector('h3 a.aname') ||
@@ -144,7 +144,7 @@
   }
 
   function render(ctx) {
-    const { settings, mode, onModeChange, onToggleOverride } = ctx;
+    const { settings, mode, onModeChange, onToggleOverride, onRequestRerender } = ctx;
     const { detector, ui } = root.GHBS;
 
     if (!settings.enabled || !settings.views.contributorsGraph) {
@@ -193,7 +193,6 @@
       classifiedCards.push({ card, nameLink, cls, metrics: m });
     }
 
-    // 清理旧的注入头和空提示
     Array.from(list.children).forEach((child) => {
       if (child.dataset && child.dataset.ghbsOwned === 'true') {
         child.remove();
@@ -204,7 +203,7 @@
     list.classList.remove('ghbs-mode-split', 'ghbs-mode-human', 'ghbs-mode-bot', 'ghbs-mode-all');
     list.classList.add(`ghbs-mode-${mode}`);
 
-    // 未懒加载完成的占位 li 放在最底部，保留其滚动加载能力
+    // 未懒加载完成的占位 li 始终留在最底部，跟随人类区继续向下懒加载
     for (const ph of placeholders) {
       if (mode === 'split') ph.style.order = '50';
       else ph.style.removeProperty('order');
@@ -219,17 +218,17 @@
       card.classList.add(`ghbs-item--${cls.kind}`);
       card.dataset.ghbsKind = cls.kind;
 
-      // 清理卡片内部旧徽章
       card.querySelectorAll('[data-ghbs-owned="true"]').forEach((el) => el.remove());
 
-      // 可见性与排序
+      // 分组模式：Bot / Agent 数量少且固定，置于上方（可折叠）；人类在下方自然向下懒加载，不会再把 Bot 顶跑
       if (mode === 'split') {
         if (cls.isBot) {
           botIndex += 1;
-          card.style.order = '40';
+          card.style.order = '20';
+          if (botsCollapsed) card.classList.add('ghbs-hidden');
         } else {
           humanIndex += 1;
-          card.style.order = '20';
+          card.style.order = '40';
         }
       } else if (mode === 'human') {
         card.style.removeProperty('order');
@@ -241,7 +240,6 @@
         card.style.removeProperty('order');
       }
 
-      // 注入徽章 + 快速切换覆盖按钮
       const headerTarget =
         (nameLink && nameLink.parentElement) ||
         card.querySelector('h2 > span, h2, h3');
@@ -267,58 +265,53 @@
     const fmtDetail = (bucket) => {
       if (!bucket.commits) return '';
       const pct = totalCommits > 0 ? ` (${((bucket.commits / totalCommits) * 100).toFixed(1)}%)` : '';
-      return `${detector.formatNumber(bucket.commits)} commits${pct} · ${detector.formatNumber(bucket.additions)} ++ / ${detector.formatNumber(bucket.deletions)} --`;
+      return `${detector.formatNumber(bucket.commits)} commits${pct}`;
     };
 
     if (mode === 'split') {
+      const botTitle =
+        counts.aiAgent > 0 && counts.bot > 0
+          ? `Bot / Agent`
+          : counts.aiAgent > 0
+            ? 'AI Agent'
+            : 'Bot / Agent';
+
+      const botHeader = ui.createSectionHeader('li', {
+        kind: 'bot',
+        title: botTitle,
+        count: totalBotCount,
+        detail: totalBotCount > 0 ? fmtDetail(metrics.bot) : '暂未检测到',
+        collapsible: totalBotCount > 0,
+        collapsed: botsCollapsed,
+        onToggleCollapse: () => {
+          botsCollapsed = !botsCollapsed;
+          if (typeof onRequestRerender === 'function') onRequestRerender();
+        }
+      });
+      botHeader.style.order = '10';
+      list.appendChild(botHeader);
+
       const humanHeader = ui.createSectionHeader('li', {
         kind: 'human',
-        title: '人类贡献者',
+        title: '人类',
         count: counts.human,
         detail: fmtDetail(metrics.human)
       });
-      humanHeader.style.order = '10';
+      humanHeader.style.order = '30';
       list.appendChild(humanHeader);
 
       if (counts.human === 0) {
         const emptyH = ui.createEl('li', 'ghbs-empty-note', '当前已加载的贡献者中暂无人类账号');
         emptyH.dataset.ghbsOwned = 'true';
-        emptyH.style.order = '21';
+        emptyH.style.order = '41';
         list.appendChild(emptyH);
       }
-
-      const botTitle =
-        counts.aiAgent > 0 && counts.bot > 0
-          ? `Bot / AI Agent（AI Agent ${counts.aiAgent} · Bot ${counts.bot}）`
-          : counts.aiAgent > 0
-            ? 'AI Agent 贡献者'
-            : 'Bot / Agent 贡献者';
-
-      const botHeader = ui.createSectionHeader('li', {
-        kind: counts.aiAgent > 0 ? 'ai-agent' : 'bot',
-        title: botTitle,
-        count: totalBotCount,
-        detail: fmtDetail(metrics.bot)
-      });
-      botHeader.style.order = '30';
-      list.appendChild(botHeader);
-
-      if (totalBotCount === 0) {
-        const emptyB = ui.createEl(
-          'li',
-          'ghbs-empty-note',
-          '当前已加载卡片中未检测到 Bot / AI Agent（向下滚动加载更多，或悬停卡片点击「标为 Bot」）'
-        );
-        emptyB.dataset.ghbsOwned = 'true';
-        emptyB.style.order = '41';
-        list.appendChild(emptyB);
-      }
-    } else if (mode === 'bot' && totalBotCount === 0) {
-      const empty = ui.createEl('li', 'ghbs-empty-note', '当前已加载的贡献者中未检测到 Bot / AI Agent 账号');
+    } else if (mode === 'bot' && totalBotCount === 0 && placeholders.length === 0) {
+      const empty = ui.createEl('li', 'ghbs-empty-note', '未检测到 Bot / Agent 账号');
       empty.dataset.ghbsOwned = 'true';
       list.appendChild(empty);
-    } else if (mode === 'human' && counts.human === 0) {
-      const empty = ui.createEl('li', 'ghbs-empty-note', '当前已加载的贡献者中未检测到人类账号');
+    } else if (mode === 'human' && counts.human === 0 && placeholders.length === 0) {
+      const empty = ui.createEl('li', 'ghbs-empty-note', '未检测到人类账号');
       empty.dataset.ghbsOwned = 'true';
       list.appendChild(empty);
     }
@@ -327,14 +320,13 @@
     if (totalCommits > 0) {
       const humanPct = ((metrics.human.commits / totalCommits) * 100).toFixed(1);
       const botPct = ((metrics.bot.commits / totalCommits) * 100).toFixed(1);
-      extraSummary = `提交占比：人类 ${humanPct}% · Bot/Agent ${botPct}%`;
+      extraSummary = `人类 ${humanPct}% · Bot ${botPct}%`;
     }
 
     const hostParent = list.parentElement || document.querySelector('#contributors');
     const existingToolbar = document.querySelector(`[data-ghbs-id="${TOOLBAR_ID}"]`);
     const toolbar = ui.renderToolbar(existingToolbar, {
       id: TOOLBAR_ID,
-      title: 'git-blame-ai · 贡献者分类',
       mode,
       counts,
       extraSummary,
