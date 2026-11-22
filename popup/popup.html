@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>git-blame-ai</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <header class="header">
+      <div class="brand">
+        <img class="brand-icon" src="../icons/icon32.png" alt="" width="22" height="22" />
+        <div>
+          <h1 class="brand-title">git-blame-ai</h1>
+          <p class="brand-sub">区分 GitHub 人类贡献与独立 Bot / Agent 账号</p>
+        </div>
+      </div>
+      <label class="switch" title="启用或暂停插件">
+        <input id="opt-enabled" type="checkbox" />
+        <span class="slider"></span>
+      </label>
+    </header>
+
+    <main class="main">
+      <!-- 当前页面实时统计 -->
+      <section id="live-card" class="card live-card">
+        <div class="card-head">
+          <span class="card-title">当前页面检测</span>
+          <span id="live-view-name" class="pill">未在贡献页</span>
+        </div>
+        <div id="live-stats" class="stats-grid">
+          <div class="stat">
+            <span class="stat-val stat-val--human" id="stat-human">-</span>
+            <span class="stat-label">人类</span>
+          </div>
+          <div class="stat">
+            <span class="stat-val stat-val--ai" id="stat-ai">-</span>
+            <span class="stat-label">AI Agent</span>
+          </div>
+          <div class="stat">
+            <span class="stat-val stat-val--bot" id="stat-bot">-</span>
+            <span class="stat-label">Bot</span>
+          </div>
+          <div class="stat">
+            <span class="stat-val stat-val--assisted" id="stat-assisted">-</span>
+            <span class="stat-label">AI 协作</span>
+          </div>
+        </div>
+        <p id="live-hint" class="hint">
+          打开 GitHub 仓库的 Contributors、Commits 或 PR/Issues 页面即可自动分开展示。
+        </p>
+      </section>
+
+      <!-- 默认展示模式 -->
+      <section class="card">
+        <div class="card-head">
+          <span class="card-title">默认展示模式</span>
+        </div>
+        <div class="segmented" id="mode-group">
+          <button type="button" class="seg-btn" data-mode="split">分组</button>
+          <button type="button" class="seg-btn" data-mode="human">仅人类</button>
+          <button type="button" class="seg-btn" data-mode="bot">Bot/Agent</button>
+          <button type="button" class="seg-btn" data-mode="all">全部</button>
+        </div>
+      </section>
+
+      <!-- 生效页面 -->
+      <section class="card">
+        <div class="card-head">
+          <span class="card-title">生效页面</span>
+        </div>
+        <div class="toggle-list">
+          <label class="toggle-row">
+            <span>Contributors 页面 <small>/graphs/contributors</small></span>
+            <input id="view-contributorsGraph" type="checkbox" />
+          </label>
+          <label class="toggle-row">
+            <span>仓库主页侧边栏 <small>Sidebar Contributors</small></span>
+            <input id="view-repoSidebar" type="checkbox" />
+          </label>
+          <label class="toggle-row">
+            <span>Commits 提交记录 <small>含 Co-authored-by</small></span>
+            <input id="view-commits" type="checkbox" />
+          </label>
+          <label class="toggle-row">
+            <span>Pull Requests / Issues <small>列表页</small></span>
+            <input id="view-issuesPrs" type="checkbox" />
+          </label>
+        </div>
+      </section>
+
+      <!-- 识别策略 -->
+      <section class="card">
+        <div class="card-head">
+          <span class="card-title">识别策略</span>
+        </div>
+        <div class="toggle-list">
+          <label class="toggle-row">
+            <span>区分 AI Agent 与普通 Bot 徽章</span>
+            <input id="opt-distinguishAiAgent" type="checkbox" />
+          </label>
+          <label class="toggle-row">
+            <span>启用启发式规则 <small>-bot / -agent 后缀</small></span>
+            <input id="opt-detectHeuristics" type="checkbox" />
+          </label>
+          <label class="select-row">
+            <span>人类 + AI 协作提交</span>
+            <select id="opt-assistedPolicy">
+              <option value="human">归入人类（默认，保留 AI 辅助标）</option>
+              <option value="assisted">单列为「AI 协作」</option>
+              <option value="bot">归入 Bot / Agent</option>
+            </select>
+          </label>
+        </div>
+      </section>
+
+      <!-- 自定义账号与规则 -->
+      <section class="card">
+        <div class="card-head">
+          <span class="card-title">自定义名单与规则</span>
+        </div>
+        <form id="rule-form" class="rule-form">
+          <input
+            id="rule-input"
+            type="text"
+            placeholder="用户名（如 devin）或规则（如 *-agent）"
+            autocomplete="off"
+          />
+          <select id="rule-type" aria-label="规则类型">
+            <option value="bot">Bot/Agent</option>
+            <option value="human">人类白名单</option>
+            <option value="pattern">通配符/正则</option>
+          </select>
+          <button type="submit" class="btn-add">添加</button>
+        </form>
+        <div id="rule-chips" class="chips"></div>
+      </section>
+    </main>
+
+    <script src="../src/known-bots.js"></script>
+    <script src="../src/detector.js"></script>
+    <script src="../src/storage.js"></script>
+    <script src="popup.js"></script>
+  </body>
+</html>
