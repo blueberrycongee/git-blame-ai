@@ -15,6 +15,7 @@
     // Anthropic Claude
     'claude': 'Claude',
     'claude-code': 'Claude Code',
+    'claudecode': 'Claude Code',
     'anthropic-claude': 'Claude',
     'claude-ai': 'Claude',
 
@@ -23,6 +24,7 @@
     'openai-codex': 'OpenAI Codex',
     'chatgpt-codex-connector': 'OpenAI Codex',
     'codex-bot': 'OpenAI Codex',
+    'codex-agent': 'OpenAI Codex',
 
     // Cognition / Devin / DeepWiki
     'devin-ai-integration': 'Devin AI',
@@ -83,7 +85,13 @@
     'cubic-dev-ai': 'Cubic AI',
     'sentry-autofix': 'Sentry Autofix',
     'warp-agent': 'Warp Agent',
-    'amp-agent': 'Amp Agent',
+    'ampagent': 'Amp',
+    'amp-agent': 'Amp',
+    'amp-code': 'Amp',
+    'junie-bot': 'JetBrains Junie',
+    'junie-agent': 'JetBrains Junie',
+    'jetbrains-junie': 'JetBrains Junie',
+    'opencode-agent': 'OpenCode',
     'continue-bot': 'Continue AI',
     'cody-bot': 'Sourcegraph Cody',
     'codegen-sh': 'Codegen AI',
@@ -188,7 +196,7 @@
    * 当账号已被确认为 GitHub App / [bot] 时，若名称命中这些关键词，归类为 AI Agent
    */
   const AI_AGENT_SIGNAL_PATTERNS = [
-    /(^|[-_])(copilot|claude|codex|devin|cursor|gemini|jules|aider|openhands|coderabbit|sourcery|greptile|sweep|qodo|codium|mentat|augment|windsurf|codeium|ellipsis|korbit|autofix|bugbot|droid)($|[-_])/,
+    /(^|[-_])(copilot|claude|codex|devin|cursor|gemini|jules|aider|openhands|coderabbit|sourcery|greptile|sweep|qodo|codium|mentat|augment|windsurf|codeium|ellipsis|korbit|autofix|bugbot|droid|ampagent|junie)($|[-_])/,
     /(^|[-_])(ai-agent|swe-agent|coding-agent|code-agent|pr-agent|ai-review|ai-reviewer|code-assist)($|[-_])/,
     /[-_]agent$/
   ];

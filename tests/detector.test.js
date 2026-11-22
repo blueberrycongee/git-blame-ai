@@ -34,6 +34,7 @@ test('identifies known AI coding agents without [bot] suffix', () => {
   for (const login of [
     'devin-ai-integration',
     'cursoragent',
+    'ampagent',
     'coderabbitai',
     'gemini-code-assist',
     'google-labs-jules',
