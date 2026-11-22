@@ -5,9 +5,7 @@
 
   const VIEW_LABELS = {
     contributorsGraph: 'Contributors 页面',
-    repoSidebar: '仓库侧边栏 Contributors',
-    commits: 'Commits 提交列表',
-    issuesPrs: 'PR / Issues 列表'
+    repoSidebar: '仓库侧边栏 Contributors'
   };
 
   let state = storage.DEFAULT_SETTINGS;
@@ -20,11 +18,8 @@
     $('opt-enabled').checked = Boolean(state.enabled);
     $('view-contributorsGraph').checked = Boolean(state.views.contributorsGraph);
     $('view-repoSidebar').checked = Boolean(state.views.repoSidebar);
-    $('view-commits').checked = Boolean(state.views.commits);
-    $('view-issuesPrs').checked = Boolean(state.views.issuesPrs);
     $('opt-distinguishAiAgent').checked = Boolean(state.distinguishAiAgent);
     $('opt-detectHeuristics').checked = Boolean(state.detectHeuristics);
-    $('opt-assistedPolicy').value = state.assistedPolicy || 'human';
 
     document.querySelectorAll('#mode-group .seg-btn').forEach((btn) => {
       btn.classList.toggle('is-active', btn.dataset.mode === state.defaultMode);
@@ -102,15 +97,15 @@
         $('stat-human').textContent = String(totals.human);
         $('stat-ai').textContent = String(totals.aiAgent);
         $('stat-bot').textContent = String(totals.bot);
-        $('stat-assisted').textContent = String(totals.assisted);
 
         if (primary.commits && primary.commits.human + primary.commits.bot > 0) {
           const totalC = primary.commits.human + primary.commits.bot;
           const hPct = ((primary.commits.human / totalC) * 100).toFixed(1);
           const bPct = ((primary.commits.bot / totalC) * 100).toFixed(1);
-          $('live-hint').textContent = `当前贡献图提交占比：人类 ${hPct}% · Bot/Agent ${bPct}%`;
+          const scopeLabel = primary.isFullData ? '全仓库 Top 100' : '当前已加载';
+          $('live-hint').textContent = `${scopeLabel}提交占比：人类 ${hPct}% · Bot/Agent ${bPct}%`;
         } else {
-          $('live-hint').textContent = '已自动识别并分组，可直接在页面工具栏切换视图。';
+          $('live-hint').textContent = '已自动识别，可直接在页面工具栏切换视图。';
         }
       });
     });
@@ -132,7 +127,7 @@
       state = await storage.updateSettings({ enabled: e.target.checked });
     });
 
-    for (const key of ['contributorsGraph', 'repoSidebar', 'commits', 'issuesPrs']) {
+    for (const key of ['contributorsGraph', 'repoSidebar']) {
       $(`view-${key}`).addEventListener('change', async (e) => {
         state = await storage.updateSettings({
           views: { [key]: e.target.checked }
@@ -146,10 +141,6 @@
 
     $('opt-detectHeuristics').addEventListener('change', async (e) => {
       state = await storage.updateSettings({ detectHeuristics: e.target.checked });
-    });
-
-    $('opt-assistedPolicy').addEventListener('change', async (e) => {
-      state = await storage.updateSettings({ assistedPolicy: e.target.value });
     });
 
     document.querySelectorAll('#mode-group .seg-btn').forEach((btn) => {

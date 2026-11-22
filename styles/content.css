@@ -7,6 +7,9 @@
   --ghbs-border-muted: var(--borderColor-muted, var(--color-border-muted, #d8dee4));
   --ghbs-fg: var(--fgColor-default, var(--color-fg-default, #1f2328));
   --ghbs-fg-muted: var(--fgColor-muted, var(--color-fg-muted, #656d76));
+  --ghbs-fg-success: var(--fgColor-success, var(--color-success-fg, #1a7f37));
+  --ghbs-fg-danger: var(--fgColor-danger, var(--color-danger-fg, #cf222e));
+  --ghbs-accent: var(--fgColor-accent, var(--color-accent-fg, #0969da));
 }
 
 .ghbs-hidden {
@@ -26,8 +29,8 @@
   position: sticky;
   top: 0;
   z-index: 20;
-  padding: 10px 0;
-  margin-bottom: 8px;
+  padding: 10px 0 8px 0;
+  margin-bottom: 12px;
   background: var(--ghbs-bg-card);
   border-bottom: 1px solid var(--ghbs-border-muted);
 }
@@ -104,60 +107,125 @@
   color: var(--ghbs-fg-muted);
 }
 
-/* ===== 极简细线分组头 ===== */
-.ghbs-section-header {
-  list-style: none !important;
+/* 极细单色全局占比条 */
+.ghbs-ratio-track {
+  display: flex;
+  width: 100%;
+  height: 3px;
+  margin-top: 8px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--ghbs-bg);
+  gap: 1px;
+}
+
+.ghbs-ratio-seg {
+  display: block;
+  height: 100%;
+  transition: width 0.2s ease;
+}
+
+.ghbs-ratio-seg--human {
+  background: var(--ghbs-fg);
+  opacity: 0.78;
+}
+
+.ghbs-ratio-seg--ai {
+  background: var(--ghbs-fg-muted);
+  opacity: 0.55;
+}
+
+.ghbs-ratio-seg--bot {
+  background: var(--ghbs-border);
+}
+
+/* ===== Contributors 顶部紧凑 AI / Bot 摘要条与全量 Bot 卡片网格 ===== */
+.ghbs-bot-panel {
+  margin: 0 0 14px 0;
+  color: var(--ghbs-fg);
+}
+
+.ghbs-bot-panel--strip {
+  border: 1px solid var(--ghbs-border-muted);
+  border-radius: 6px;
+  background: var(--ghbs-bg);
+}
+
+.ghbs-bot-strip {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 6px 12px;
-  width: 100%;
-  padding: 10px 2px 6px 2px;
-  margin: 4px 0 0 0;
-  border: none;
-  border-bottom: 1px solid var(--ghbs-border-muted);
-  background: transparent;
+  gap: 8px 12px;
+  padding: 8px 12px;
   font-size: 12px;
-  font-weight: 600;
-  color: var(--ghbs-fg);
-  box-sizing: border-box;
+  line-height: 1.4;
 }
 
-.ghbs-section-header--compact {
-  padding: 6px 12px;
-  margin: 0;
-  font-size: 11px;
-  background: var(--ghbs-bg);
-  border-bottom: 1px solid var(--ghbs-border-muted);
-}
-
-.ghbs-section-header-left,
-.ghbs-section-header-right {
+.ghbs-bot-strip-left,
+.ghbs-bot-strip-right {
   display: inline-flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
 }
 
-.ghbs-section-count {
-  font-size: 11px;
+.ghbs-bot-strip-title {
   font-weight: 500;
+  color: var(--ghbs-fg);
+}
+
+.ghbs-bot-strip-stat {
+  font-size: 11px;
   font-variant-numeric: tabular-nums;
   color: var(--ghbs-fg-muted);
 }
 
-.ghbs-section-detail {
+.ghbs-bot-chips {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.ghbs-bot-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 1px 7px 1px 4px;
+  border-radius: 999px;
+  border: 1px solid var(--ghbs-border-muted);
+  background: var(--ghbs-bg-card);
   font-size: 11px;
-  font-weight: 400;
+  color: var(--ghbs-fg);
+}
+
+.ghbs-bot-chip--more {
+  padding: 1px 7px;
+  color: var(--ghbs-fg-muted);
+}
+
+.ghbs-bot-chip-avatar {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.ghbs-bot-chip-name {
+  font-weight: 500;
+}
+
+.ghbs-bot-chip-meta {
   font-variant-numeric: tabular-nums;
   color: var(--ghbs-fg-muted);
 }
 
 .ghbs-collapse-btn {
-  padding: 1px 7px;
+  padding: 2px 8px;
   border-radius: 4px;
-  border: 1px solid var(--ghbs-border-muted);
-  background: transparent;
+  border: 1px solid var(--ghbs-border);
+  background: var(--ghbs-bg-card);
   color: var(--ghbs-fg-muted);
   font-size: 11px;
   font-weight: 500;
@@ -167,90 +235,273 @@
 
 .ghbs-collapse-btn:hover {
   color: var(--ghbs-fg);
-  border-color: var(--ghbs-border);
+  border-color: var(--ghbs-fg-muted);
+}
+
+/* 全量 Bot / AI Agent 卡片网格（与 GitHub 原生 2 列卡片对齐） */
+.ghbs-bot-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.ghbs-bot-panel--strip .ghbs-bot-grid {
+  padding: 12px;
+  border-top: 1px solid var(--ghbs-border-muted);
+  background: var(--ghbs-bg-card);
+  border-radius: 0 0 6px 6px;
+}
+
+@media (max-width: 768px) {
+  .ghbs-bot-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.ghbs-bot-card {
+  border: 1px solid var(--ghbs-border);
+  border-radius: 6px;
+  background: var(--ghbs-bg-card);
+  padding: 14px 16px 12px 16px;
+  box-sizing: border-box;
+}
+
+.ghbs-bot-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.ghbs-bot-card-profile {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.ghbs-bot-avatar-link {
+  flex-shrink: 0;
+  display: inline-flex;
+}
+
+.ghbs-bot-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid var(--ghbs-border-muted);
+  object-fit: cover;
+}
+
+.ghbs-bot-identity {
+  min-width: 0;
+}
+
+.ghbs-bot-name-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+
+.ghbs-bot-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ghbs-accent);
+  text-decoration: none;
+  word-break: break-all;
+}
+
+.ghbs-bot-name:hover {
+  text-decoration: underline;
+}
+
+.ghbs-bot-metrics {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.ghbs-bot-commits-link {
+  color: var(--ghbs-fg-muted);
+  text-decoration: none;
+}
+
+.ghbs-bot-commits-link:hover {
+  color: var(--ghbs-accent);
+  text-decoration: underline;
+}
+
+.ghbs-bot-share {
+  color: var(--ghbs-fg-muted);
+}
+
+.ghbs-bot-add {
+  color: var(--ghbs-fg-success);
+}
+
+.ghbs-bot-del {
+  color: var(--ghbs-fg-danger);
+}
+
+.ghbs-bot-rank {
+  flex-shrink: 0;
+  padding: 1px 7px;
+  border-radius: 999px;
+  border: 1px solid var(--ghbs-border-muted);
+  background: var(--ghbs-bg);
+  font-size: 11px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: var(--ghbs-fg-muted);
+}
+
+/* 周贡献柱状图（SVG） */
+.ghbs-bot-chart {
+  width: 100%;
+}
+
+.ghbs-bot-chart-svg {
+  display: block;
+  width: 100%;
+  height: 84px;
+  overflow: visible;
+}
+
+.ghbs-bot-chart-axis {
+  stroke: var(--ghbs-border-muted);
+  stroke-width: 1;
+}
+
+.ghbs-bot-chart-bar {
+  fill: var(--ghbs-fg-muted);
+  opacity: 0.55;
+  transition: opacity 0.12s ease;
+}
+
+.ghbs-bot-chart-bar:hover {
+  opacity: 0.9;
+}
+
+.ghbs-bot-chart-tick {
+  fill: var(--ghbs-fg-muted);
+  font-size: 10px;
+  font-family: inherit;
+}
+
+.ghbs-bot-chart-empty {
+  padding: 20px 0;
+  text-align: center;
+  font-size: 11px;
+  color: var(--ghbs-fg-muted);
 }
 
 .ghbs-empty-note {
   list-style: none !important;
-  grid-column: 1 / -1;
-  flex-basis: 100%;
-  padding: 16px 12px;
+  padding: 18px 12px;
   color: var(--ghbs-fg-muted);
   font-size: 12px;
   text-align: center;
 }
 
 .ghbs-empty-note--compact {
-  padding: 8px 4px;
-  font-size: 11px;
+  padding: 10px 12px;
+  font-size: 12px;
   text-align: left;
 }
 
-/* ===== /graphs/contributors 网格布局（兼容 2026 React ul 与旧版 ol） ===== */
-ul.ghbs-contrib-list,
-ol.ghbs-contrib-list {
-  display: grid !important;
-  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-  grid-auto-rows: auto !important;
-  gap: 14px !important;
-  padding-left: 0 !important;
-  list-style: none !important;
-}
-
-@media (max-width: 768px) {
-  ul.ghbs-contrib-list,
-  ol.ghbs-contrib-list {
-    grid-template-columns: 1fr !important;
-  }
-}
-
-ul.ghbs-contrib-list > li.ghbs-section-header,
-ol.ghbs-contrib-list > li.ghbs-section-header {
-  grid-column: 1 / -1 !important;
-  float: none !important;
-  width: 100% !important;
-  height: auto !important;
-  min-height: 0 !important;
-  align-self: start !important;
-  margin: 4px 0 0 0 !important;
-}
-
-ul.ghbs-contrib-list > li.ghbs-item,
-ol.ghbs-contrib-list > li.ghbs-item {
-  float: none !important;
-  width: 100% !important;
-  margin: 0 !important;
-  box-sizing: border-box !important;
-}
-
-/* ===== 仓库侧边栏 Contributors ===== */
-ul.ghbs-sidebar-list {
+/* ===== 仓库侧边栏极简内联切换与全仓库占比摘要 ===== */
+.ghbs-sidebar-heading {
   display: flex !important;
-  flex-direction: column;
-  padding-left: 0 !important;
-  list-style: none !important;
-}
-
-ul.ghbs-sidebar-list.ghbs-sidebar-grid {
-  display: flex !important;
-  flex-direction: row !important;
-  flex-wrap: wrap !important;
   align-items: center;
-  gap: 6px !important;
+  justify-content: space-between;
+  gap: 8px;
 }
 
-ul.ghbs-sidebar-list > li.ghbs-section-header {
-  flex: 0 0 100% !important;
-  width: 100% !important;
-  padding: 6px 0 4px 0;
+.ghbs-sidebar-inline-toggle {
+  flex-shrink: 0;
+  padding: 1px 6px;
+  border-radius: 4px;
+  border: 1px solid var(--ghbs-border-muted);
   background: transparent;
+  color: var(--ghbs-fg-muted);
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 1.5;
+  cursor: pointer;
+  transition: color 0.12s ease, border-color 0.12s ease, background 0.12s ease;
 }
 
-/* ===== Commits & PR/Issues 列表 ===== */
-.ghbs-commit-group-list,
-.ghbs-issue-list {
-  display: flex !important;
-  flex-direction: column !important;
+.ghbs-sidebar-inline-toggle:hover {
+  color: var(--ghbs-fg);
+  border-color: var(--ghbs-border);
+  background: var(--ghbs-bg);
+}
+
+.ghbs-sidebar-summary {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--ghbs-border-muted);
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--ghbs-fg-muted);
+}
+
+.ghbs-ratio-track--sidebar {
+  margin-top: 0;
+  margin-bottom: 6px;
+}
+
+.ghbs-sidebar-summary-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px 8px;
+}
+
+.ghbs-sidebar-summary-ratio {
+  font-variant-numeric: tabular-nums;
+  color: var(--ghbs-fg-muted);
+}
+
+.ghbs-sidebar-summary-link {
+  color: var(--ghbs-fg-muted);
+  text-decoration: none;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.ghbs-sidebar-summary-link:hover {
+  color: var(--ghbs-accent);
+  text-decoration: underline;
+}
+
+.ghbs-sidebar-bot-avatar {
+  position: relative;
+}
+
+.ghbs-sidebar-bot-avatar img {
+  opacity: 0.65;
+  filter: grayscale(40%);
+}
+
+.ghbs-sidebar-bot-avatar::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--ghbs-fg-muted);
+  border: 1.5px solid var(--ghbs-bg-card);
+  pointer-events: none;
 }
 
 /* ===== 极简单色行内徽章 & 悬停覆写按钮 ===== */
@@ -281,10 +532,18 @@ ul.ghbs-sidebar-list > li.ghbs-section-header {
 }
 
 .ghbs-group-rank {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 5px;
+  border-radius: 4px;
   font-size: 11px;
   font-weight: 500;
+  line-height: 18px;
   font-variant-numeric: tabular-nums;
   color: var(--ghbs-fg-muted);
+  background: var(--ghbs-bg);
+  border: 1px solid var(--ghbs-border-muted);
+  white-space: nowrap;
 }
 
 .ghbs-override-btn {
@@ -305,8 +564,6 @@ ul.ghbs-sidebar-list > li.ghbs-section-header {
 }
 
 .ghbs-item:hover .ghbs-override-btn,
-.ghbs-commit-item:hover .ghbs-override-btn,
-.ghbs-issue-item:hover .ghbs-override-btn,
 .ghbs-override-btn:focus-visible {
   opacity: 1;
   max-width: 120px;

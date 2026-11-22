@@ -3,16 +3,13 @@
 
   const DEFAULT_SETTINGS = {
     enabled: true,
-    defaultMode: 'split', // 'split' | 'human' | 'bot' | 'all'
+    defaultMode: 'human', // 'human' | 'bot' | 'all'
     views: {
       contributorsGraph: true,
-      repoSidebar: true,
-      commits: true,
-      issuesPrs: true
+      repoSidebar: true
     },
     detectHeuristics: true,
     distinguishAiAgent: true,
-    assistedPolicy: 'human', // 'human' (人驱动 AI 仍算人类贡献) | 'assisted' | 'bot'
     customBots: [],
     customHumans: [],
     customPatterns: []
@@ -20,11 +17,20 @@
 
   const STORAGE_KEY = 'ghbs_settings_v1';
 
+  function normalizeDefaultMode(mode) {
+    if (mode === 'human' || mode === 'bot' || mode === 'all') {
+      return mode;
+    }
+    // 兼容旧版 'split' / 'auto' 配置，默认优先人类视图
+    return 'human';
+  }
+
   function mergeSettings(saved) {
     const src = saved && typeof saved === 'object' ? saved : {};
     return {
       ...DEFAULT_SETTINGS,
       ...src,
+      defaultMode: normalizeDefaultMode(src.defaultMode),
       views: {
         ...DEFAULT_SETTINGS.views,
         ...(src.views && typeof src.views === 'object' ? src.views : {})

@@ -13,7 +13,14 @@
   let activeObserver = null;
 
   function getModeForView(viewName) {
-    return currentModeByView[viewName] || currentSettings.defaultMode || 'split';
+    if (currentModeByView[viewName]) {
+      return currentModeByView[viewName];
+    }
+    const configured = currentSettings.defaultMode || 'human';
+    if (configured === 'human' || configured === 'bot' || configured === 'all') {
+      return configured;
+    }
+    return 'human';
   }
 
   function handleModeChange(viewName, nextMode) {
@@ -36,9 +43,7 @@
 
       const viewEntries = [
         ['contributorsGraph', views.contributorsGraph],
-        ['repoSidebar', views.repoSidebar],
-        ['commits', views.commits],
-        ['issuesPrs', views.issuesPrs]
+        ['repoSidebar', views.repoSidebar]
       ];
 
       for (const [name, view] of viewEntries) {
@@ -135,9 +140,7 @@
       } else if (msg.type === 'GHBS_SET_MODE' && msg.mode) {
         currentModeByView = {
           contributorsGraph: msg.mode,
-          repoSidebar: msg.mode,
-          commits: msg.mode,
-          issuesPrs: msg.mode
+          repoSidebar: msg.mode
         };
         scheduleRender(0);
         sendResponse({ ok: true });

@@ -27,12 +27,11 @@
       "js": [
         "src/known-bots.js",
         "src/detector.js",
+        "src/contributors-data.js",
         "src/storage.js",
         "src/ui.js",
         "src/views/contributors-graph.js",
         "src/views/repo-sidebar.js",
-        "src/views/commits-list.js",
-        "src/views/issues-prs.js",
         "src/content.js"
       ],
       "run_at": "document_idle"

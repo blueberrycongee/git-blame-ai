@@ -1,10 +1,10 @@
 (function (root) {
   'use strict';
 
-  const TOOLBAR_ID = 'ghbs-sidebar-contributors-toolbar';
+  const TOGGLE_ID = 'ghbs-sidebar-inline-toggle';
+  const SUMMARY_ID = 'ghbs-sidebar-repo-summary';
 
   function findSidebarCell() {
-    // 兼容 2026 新版 React 侧边栏（div[class*="sidebarSection"]）与旧版 .BorderGrid-cell
     const links = document.querySelectorAll(
       'h2 a[href*="/graphs/contributors"], h3 a[href*="/graphs/contributors"]'
     );
@@ -15,7 +15,11 @@
         link.closest('section') ||
         link.closest('div');
       if (cell && cell.querySelector('ul')) {
-        return { cell, heading: link.closest('h2, h3') };
+        return {
+          cell,
+          heading: link.closest('h2, h3'),
+          contribLink: link
+        };
       }
     }
     return null;
@@ -59,19 +63,23 @@
   }
 
   function cleanup() {
-    const toolbar = document.querySelector(`[data-ghbs-id="${TOOLBAR_ID}"]`);
-    if (toolbar) toolbar.remove();
+    document.querySelectorAll(`[data-ghbs-id="${TOGGLE_ID}"], [data-ghbs-id="${SUMMARY_ID}"]`).forEach((el) => {
+      el.remove();
+    });
+    document.querySelectorAll('.ghbs-sidebar-heading').forEach((el) => {
+      el.classList.remove('ghbs-sidebar-heading');
+    });
 
     const found = findSidebarCell();
     if (!found) return;
     const ul = found.cell.querySelector('ul');
     if (!ul) return;
 
-    ul.classList.remove('ghbs-sidebar-list', 'ghbs-sidebar-grid', 'ghbs-sidebar-rows');
     ul.querySelectorAll('[data-ghbs-owned="true"]').forEach((el) => el.remove());
     ul.querySelectorAll('li.ghbs-sidebar-item').forEach((li) => {
       li.classList.remove(
         'ghbs-sidebar-item',
+        'ghbs-sidebar-bot-avatar',
         'ghbs-item--human',
         'ghbs-item--bot',
         'ghbs-item--ai-agent',
@@ -82,9 +90,16 @@
     });
   }
 
+  function formatBotCountLabel(counts) {
+    const total = counts.aiAgent + counts.bot;
+    if (counts.aiAgent > 0 && counts.bot > 0) return `${total} 个 Bot / Agent`;
+    if (counts.aiAgent > 0) return `${counts.aiAgent} 个 AI Agent`;
+    return `${counts.bot} 个 Bot`;
+  }
+
   function render(ctx) {
-    const { settings, mode, onModeChange } = ctx;
-    const { detector, ui } = root.GHBS;
+    const { settings, mode, onModeChange, onRequestRerender } = ctx;
+    const { detector, ui, contributorsData } = root.GHBS;
 
     if (!settings.enabled || !settings.views.repoSidebar) {
       cleanup();
@@ -94,7 +109,7 @@
     const found = findSidebarCell();
     if (!found) return null;
 
-    const { cell, heading } = found;
+    const { cell, heading, contribLink } = found;
     const ul = cell.querySelector('ul');
     if (!ul) return null;
 
@@ -104,115 +119,202 @@
 
     if (items.length === 0) return null;
 
+    // 复用同源 /graphs/contributors-data，让侧边栏与贡献榜保持完全一致的全仓库口径
+    const contribHref = contribLink ? contribLink.getAttribute('href') || '' : '';
+    let repoInfo = null;
+    if (contribHref && contributorsData) {
+      try {
+        const parsedUrl = new URL(contribHref, window.location.origin);
+        repoInfo = contributorsData.parseRepoFromPath(parsedUrl.pathname);
+      } catch (_) {
+        repoInfo = null;
+      }
+    }
+
+    let fullAnalysis = null;
+    if (repoInfo && contributorsData) {
+      const repoState = contributorsData.ensureRepoDataLoaded(repoInfo.owner, repoInfo.repo, () => {
+        if (typeof onRequestRerender === 'function') onRequestRerender();
+      });
+      if (repoState && repoState.status === 'ready' && repoState.records.length > 0) {
+        fullAnalysis = contributorsData.analyzeContributors(repoState.records, settings, detector);
+      }
+    }
+
     const isAvatarGrid =
       /avatarGrid/i.test(ul.className || '') ||
       ul.classList.contains('flex-wrap') ||
       items.every((li) => (li.textContent || '').trim().length === 0);
 
-    ul.classList.add('ghbs-sidebar-list');
-    ul.classList.toggle('ghbs-sidebar-grid', isAvatarGrid);
-    ul.classList.toggle('ghbs-sidebar-rows', !isAvatarGrid);
-
     Array.from(ul.children).forEach((child) => {
       if (child.dataset && child.dataset.ghbsOwned === 'true') child.remove();
     });
 
-    const counts = { total: 0, human: 0, aiAgent: 0, bot: 0, assisted: 0 };
+    const visibleCounts = { total: 0, human: 0, aiAgent: 0, bot: 0, assisted: 0 };
 
     for (const li of items) {
       const { link, signals } = extractSidebarSignals(li);
-      const cls = detector.classifyAccount(signals, settings);
+      const localCls = detector.classifyAccount(signals, settings);
+      const matched =
+        fullAnalysis &&
+        ((localCls.baseLogin && fullAnalysis.byLogin.get(localCls.baseLogin)) ||
+          (localCls.login && fullAnalysis.byLogin.get(localCls.login)));
+      const cls = matched ? matched.cls : localCls;
 
-      counts.total += 1;
+      visibleCounts.total += 1;
       if (cls.isBot) {
-        if (cls.kind === 'ai-agent') counts.aiAgent += 1;
-        else counts.bot += 1;
+        if (cls.kind === 'ai-agent') visibleCounts.aiAgent += 1;
+        else visibleCounts.bot += 1;
       } else {
-        counts.human += 1;
+        visibleCounts.human += 1;
       }
 
       li.classList.add('ghbs-sidebar-item');
-      li.classList.remove('ghbs-item--human', 'ghbs-item--bot', 'ghbs-item--ai-agent', 'ghbs-hidden');
+      li.classList.remove(
+        'ghbs-sidebar-bot-avatar',
+        'ghbs-item--human',
+        'ghbs-item--bot',
+        'ghbs-item--ai-agent',
+        'ghbs-hidden'
+      );
       li.classList.add(`ghbs-item--${cls.kind}`);
       li.dataset.ghbsKind = cls.kind;
-
+      li.style.removeProperty('order');
       li.querySelectorAll('[data-ghbs-owned="true"]').forEach((el) => el.remove());
 
-      if (link) {
+      if (link && cls.isBot) {
         link.title = `${cls.display} · ${cls.label}（${cls.reason}）`;
       }
 
-      if (!isAvatarGrid && cls.isBot) {
+      if (cls.isBot && isAvatarGrid) {
+        li.classList.add('ghbs-sidebar-bot-avatar');
+      } else if (cls.isBot && !isAvatarGrid) {
         const badge = ui.createBadge(cls, { allowOverride: false });
         li.appendChild(badge);
       }
 
-      if (mode === 'split') {
-        li.style.order = cls.isBot ? '40' : '20';
-      } else if (mode === 'human') {
-        li.style.removeProperty('order');
+      if (mode === 'human') {
         if (cls.isBot) li.classList.add('ghbs-hidden');
       } else if (mode === 'bot') {
-        li.style.removeProperty('order');
         if (!cls.isBot) li.classList.add('ghbs-hidden');
-      } else {
-        li.style.removeProperty('order');
       }
     }
 
-    const totalBots = counts.aiAgent + counts.bot;
+    const visibleBots = visibleCounts.aiAgent + visibleCounts.bot;
 
-    if (mode === 'split' && (totalBots > 0 || counts.human > 0)) {
-      const hHeader = ui.createSectionHeader('li', {
-        kind: 'human',
-        title: '人类',
-        count: counts.human,
-        compact: true
-      });
-      hHeader.style.order = '10';
-      ul.appendChild(hHeader);
+    // 1. 标题行右侧极简切换按钮：仅当前排头像中存在 Bot 时出现，不插入多余大框割裂标题与头像
+    const existingToggle = cell.querySelector(`[data-ghbs-id="${TOGGLE_ID}"]`);
+    if (visibleBots > 0 && heading) {
+      heading.classList.add('ghbs-sidebar-heading');
+      const btn = existingToggle || ui.createEl('button', 'ghbs-sidebar-inline-toggle');
+      btn.type = 'button';
+      btn.dataset.ghbsId = TOGGLE_ID;
+      btn.dataset.ghbsOwned = 'true';
 
-      const bHeader = ui.createSectionHeader('li', {
-        kind: counts.aiAgent > 0 ? 'ai-agent' : 'bot',
-        title: 'Bot / Agent',
-        count: totalBots,
-        compact: true
-      });
-      bHeader.style.order = '30';
-      ul.appendChild(bHeader);
-
-      if (totalBots === 0) {
-        const none = ui.createEl('li', 'ghbs-empty-note ghbs-empty-note--compact', '前排暂无 Bot / Agent');
-        none.dataset.ghbsOwned = 'true';
-        none.style.order = '41';
-        ul.appendChild(none);
+      let label = '';
+      let nextMode = 'all';
+      if (mode === 'human') {
+        label = `前排已隐藏 ${visibleBots} · 显示`;
+        nextMode = 'all';
+      } else if (mode === 'bot') {
+        label = `仅看 Bot · 看人类`;
+        nextMode = 'human';
+      } else {
+        label = `隐藏前排 Bot`;
+        nextMode = 'human';
       }
-    } else if (mode === 'bot' && totalBots === 0) {
-      const none = ui.createEl('li', 'ghbs-empty-note ghbs-empty-note--compact', '侧边栏未检测到 Bot / Agent');
-      none.dataset.ghbsOwned = 'true';
-      ul.appendChild(none);
+      btn.textContent = label;
+      btn.title = `当前侧边栏展示的前 ${visibleCounts.total} 位贡献者中含 ${formatBotCountLabel(visibleCounts)}`;
+
+      btn.onclick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (typeof onModeChange === 'function') onModeChange(nextMode);
+      };
+
+      if (!existingToggle) {
+        heading.appendChild(btn);
+      }
+    } else {
+      if (existingToggle) existingToggle.remove();
+      if (heading) heading.classList.remove('ghbs-sidebar-heading');
     }
 
-    const existingToolbar = cell.querySelector(`[data-ghbs-id="${TOOLBAR_ID}"]`);
-    const toolbar = ui.renderToolbar(existingToolbar, {
-      id: TOOLBAR_ID,
-      mode,
-      counts,
-      compact: true,
-      onModeChange
-    });
+    // 2. 侧边栏底部全仓库占比摘要（与 /graphs/contributors 完全同源、同口径）
+    const existingSummary = cell.querySelector(`[data-ghbs-id="${SUMMARY_ID}"]`);
+    const hasFullBots = Boolean(fullAnalysis && fullAnalysis.counts.totalBots > 0);
 
-    if (!existingToolbar) {
-      if (heading && heading.nextSibling) {
-        heading.parentElement.insertBefore(toolbar, heading.nextSibling);
-      } else {
-        cell.insertBefore(toolbar, ul);
+    if (hasFullBots) {
+      const summary = existingSummary || ui.createEl('div', 'ghbs-sidebar-summary');
+      summary.dataset.ghbsId = SUMMARY_ID;
+      summary.dataset.ghbsOwned = 'true';
+      summary.textContent = '';
+
+      // 3px 极简单色比例条
+      const track = ui.createEl('div', 'ghbs-ratio-track ghbs-ratio-track--sidebar');
+      track.setAttribute('aria-hidden', 'true');
+      if (fullAnalysis.shares.humanPct > 0) {
+        const segH = ui.createEl('span', 'ghbs-ratio-seg ghbs-ratio-seg--human');
+        segH.style.width = `${fullAnalysis.shares.humanPct.toFixed(2)}%`;
+        track.appendChild(segH);
       }
+      if (fullAnalysis.shares.aiAgentPct > 0) {
+        const segA = ui.createEl('span', 'ghbs-ratio-seg ghbs-ratio-seg--ai');
+        segA.style.width = `${fullAnalysis.shares.aiAgentPct.toFixed(2)}%`;
+        track.appendChild(segA);
+      }
+      if (fullAnalysis.shares.botPct > 0) {
+        const segB = ui.createEl('span', 'ghbs-ratio-seg ghbs-ratio-seg--bot');
+        segB.style.width = `${fullAnalysis.shares.botPct.toFixed(2)}%`;
+        track.appendChild(segB);
+      }
+      summary.appendChild(track);
+
+      const metaRow = ui.createEl('div', 'ghbs-sidebar-summary-row');
+      const ratioParts = [`人类 ${fullAnalysis.shares.humanPct.toFixed(1)}%`];
+      if (fullAnalysis.counts.aiAgent > 0 && fullAnalysis.counts.bot > 0) {
+        ratioParts.push(`Bot/Agent ${fullAnalysis.shares.allBotsPct.toFixed(1)}%`);
+      } else if (fullAnalysis.counts.aiAgent > 0) {
+        ratioParts.push(`AI Agent ${fullAnalysis.shares.aiAgentPct.toFixed(1)}%`);
+      } else {
+        ratioParts.push(`Bot ${fullAnalysis.shares.botPct.toFixed(1)}%`);
+      }
+      metaRow.appendChild(ui.createEl('span', 'ghbs-sidebar-summary-ratio', ratioParts.join(' · ')));
+
+      const detailLink = ui.createEl(
+        'a',
+        'ghbs-sidebar-summary-link',
+        `${formatBotCountLabel(fullAnalysis.counts)} ›`
+      );
+      detailLink.href = contribHref || `/${repoInfo.owner}/${repoInfo.repo}/graphs/contributors`;
+      detailLink.title = '查看全仓库人类与 Bot / AI Agent 贡献详情';
+      metaRow.appendChild(detailLink);
+
+      summary.appendChild(metaRow);
+
+      if (!existingSummary) {
+        cell.appendChild(summary);
+      }
+    } else if (existingSummary) {
+      existingSummary.remove();
+    }
+
+    if (fullAnalysis) {
+      return {
+        view: 'repoSidebar',
+        isFullData: true,
+        counts: fullAnalysis.counts,
+        commits: {
+          human: fullAnalysis.metrics.human.commits,
+          bot: fullAnalysis.metrics.allBots.commits
+        }
+      };
     }
 
     return {
       view: 'repoSidebar',
-      counts
+      isFullData: false,
+      counts: visibleCounts
     };
   }
 
