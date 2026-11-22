@@ -540,13 +540,14 @@
           onToggleOverride
         });
 
-        // 仅在人类主榜中，且该人类排名确实因前面有 Bot 被顶后时，才展示清晰的「人类 #N」标签，避免无意义的双重排名
+        // 仅在人类主榜中，且该人类排名确实因前面有 Bot 被顶后时，才展示清晰的「人类 #N」标签
+        // 始终按当前视图列表顺序计算（同时兼容全历史与时间轴刷选区间），确保与卡片右上角 #N 严格自洽
         if (mode === 'human' && !cls.isBot) {
-          const humanRank = matched ? matched.groupRank : domHumanCounter;
-          const overallRank = matched ? matched.overallRank : i + 1;
-          if (humanRank > 0 && humanRank !== overallRank) {
+          const humanRank = domHumanCounter;
+          const displayedRank = i + 1;
+          if (humanRank > 0 && humanRank !== displayedRank) {
             const rankPill = ui.createEl('span', 'ghbs-group-rank', `人类 #${humanRank}`);
-            rankPill.title = `去除 Bot / AI Agent 后的人类贡献排名 #${humanRank}（总榜 #${overallRank}）`;
+            rankPill.title = `去除 Bot / AI Agent 后的人类排名 #${humanRank}（原排 #${displayedRank}）`;
             badgeWrap.prepend(rankPill);
           }
         }

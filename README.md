@@ -4,6 +4,8 @@
 >
 > *Humans using AI tools is totally fine — the insight is still human. `git-blame-ai` simply separates autonomous bot/agent accounts from human contributors so you can see who's actually building a repo.*
 
+![打开前 / 打开后对比](assets/preview.png)
+
 **中文简介**：在 GitHub 的 **Contributors 贡献榜** 与 **仓库侧边栏 Contributors** 中，清晰区分 **人类账号** 与 **独立运行的 Bot / AI Agent 账号**（如 `claude`、`devin-ai-integration[bot]`、`copilot-swe-agent[bot]`、`codex`、`dependabot[bot]`、`renovate[bot]` 等）。
 
 > **核心理念**：如今人类开发者普遍会借助 AI 写代码，这完全没问题——**人驱动机器产出，核心依然是人的 insight**。本插件并不是“反 AI”，而是把独立的机器人 / Agent 账号从人类贡献榜中剥离，让仓库的真实人类骨架与自动化机器占比一目了然。
