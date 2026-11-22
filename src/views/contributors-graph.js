@@ -8,26 +8,75 @@
     return PATH_RE.test(pathname);
   }
 
+  function findListContainer() {
+    // 1. 2026 新版 React Contributors 页面（ul[class*="chartList"] 或包含多个 commits?author= 卡片的列表）
+    const reactList = document.querySelector('ul[class*="chartList__"]');
+    if (reactList) return reactList;
+
+    const firstCommitLink = document.querySelector('main a[href*="/commits?author="]');
+    if (firstCommitLink) {
+      let node = firstCommitLink;
+      while (node && node.parentElement && node !== document.body) {
+        const parent = node.parentElement;
+        if (parent.tagName === 'UL' || parent.tagName === 'OL') {
+          const matching = Array.from(parent.children).filter(
+            (ch) => ch.dataset.ghbsOwned !== 'true' && ch.querySelector('a[href*="/commits?author="]')
+          );
+          if (matching.length >= 1) return parent;
+        }
+        node = parent;
+      }
+    }
+
+    // 2. 旧版 GitHub Contributors DOM
+    return (
+      document.querySelector('#contributors ol.contrib-data') ||
+      document.querySelector('ol.contrib-data') ||
+      document.querySelector('#contributors ol')
+    );
+  }
+
+  function isLoadedCard(el) {
+    if (!el || el.tagName !== 'LI' || el.dataset.ghbsOwned === 'true') return false;
+    return Boolean(
+      el.querySelector('a[href*="/commits?author="]') ||
+        el.classList.contains('contrib-person') ||
+        el.querySelector('h2 a[href], h3 a[href]')
+    );
+  }
+
   function extractContributorSignals(card) {
-    // 尝试多种 GitHub DOM 选择器定位用户名链接与头像
+    // 优先取卡片标题里的用户名链接（2026 新版为 h2 a，旧版为 h3 a.aname）
     const nameLink =
+      card.querySelector('h2 a[href]') ||
       card.querySelector('h3 a.aname') ||
       card.querySelector('h3 a[href^="/apps/"]') ||
       card.querySelector('h3 a[data-hovercard-type]') ||
       Array.from(card.querySelectorAll('h3 a[href]')).find((a) => (a.textContent || '').trim().length > 0) ||
-      card.querySelector('a.aname') ||
+      card.querySelector('a[href^="/apps/"]') ||
+      card.querySelector('a[data-hovercard-type="user"]');
+
+    const avatarLink =
+      card.querySelector('a[data-hovercard-type]') ||
       card.querySelector('a[href^="/apps/"]');
 
     const avatarImg =
+      card.querySelector('img[data-testid="github-avatar"]') ||
       card.querySelector('img.avatar') ||
       card.querySelector('img[src*="avatars.githubusercontent.com"]');
 
-    const botBadge = Array.from(card.querySelectorAll('span.Label, span.label, span[class*="Label"]')).some((el) =>
-      /^(bot|app)$/i.test((el.textContent || '').trim())
+    const commitLink = card.querySelector('a[href*="/commits?author="]');
+
+    const botBadge = Array.from(card.querySelectorAll('span.Label, span.label, span[data-component="Label"]')).some(
+      (el) => /^(bot|app)$/i.test((el.textContent || '').trim())
     );
 
     let login = nameLink ? (nameLink.textContent || '').trim() : '';
-    const href = nameLink ? nameLink.getAttribute('href') || '' : '';
+    const href =
+      (nameLink && nameLink.getAttribute('href')) ||
+      (avatarLink && avatarLink.getAttribute('href')) ||
+      (commitLink && commitLink.getAttribute('href')) ||
+      '';
 
     if (!login && avatarImg && avatarImg.alt) {
       login = avatarImg.alt.replace(/^@/, '').trim();
@@ -39,20 +88,26 @@
         login,
         href,
         avatarSrc: avatarImg ? avatarImg.getAttribute('src') || '' : '',
-        hovercardType: nameLink ? nameLink.getAttribute('data-hovercard-type') || '' : '',
-        hovercardUrl: nameLink ? nameLink.getAttribute('data-hovercard-url') || '' : '',
+        hovercardType:
+          (nameLink && nameLink.getAttribute('data-hovercard-type')) ||
+          (avatarLink && avatarLink.getAttribute('data-hovercard-type')) ||
+          '',
+        hovercardUrl:
+          (nameLink && nameLink.getAttribute('data-hovercard-url')) ||
+          (avatarLink && avatarLink.getAttribute('data-hovercard-url')) ||
+          '',
         hasBotBadge: botBadge
       }
     };
   }
 
   function extractCardMetrics(card, detector) {
-    const meta = card.querySelector('.cmeta') || card;
     const commitsEl =
-      meta.querySelector('a[href*="commits"]') ||
-      Array.from(meta.querySelectorAll('a, span')).find((el) => /\bcommits?\b/i.test(el.textContent || ''));
-    const addEl = meta.querySelector('.a');
-    const delEl = meta.querySelector('.d');
+      card.querySelector('a[href*="/commits?author="]') ||
+      card.querySelector('.cmeta a[href*="commits"]') ||
+      Array.from(card.querySelectorAll('a, span')).find((el) => /\bcommits?\b/i.test(el.textContent || ''));
+    const addEl = card.querySelector('.color-fg-success, .cmeta .a');
+    const delEl = card.querySelector('.color-fg-danger, .cmeta .d');
 
     return {
       commits: commitsEl ? detector.parseCompactNumber(commitsEl.textContent || '') : 0,
@@ -75,7 +130,7 @@
 
     list.classList.remove('ghbs-contrib-list', 'ghbs-mode-split', 'ghbs-mode-human', 'ghbs-mode-bot', 'ghbs-mode-all');
     clearOwned(list);
-    list.querySelectorAll('li.ghbs-item').forEach((card) => {
+    Array.from(list.children).forEach((card) => {
       card.classList.remove(
         'ghbs-item',
         'ghbs-item--human',
@@ -86,14 +141,6 @@
       card.style.removeProperty('order');
       delete card.dataset.ghbsKind;
     });
-  }
-
-  function findListContainer() {
-    return (
-      document.querySelector('#contributors ol.contrib-data') ||
-      document.querySelector('ol.contrib-data') ||
-      document.querySelector('#contributors ol')
-    );
   }
 
   function render(ctx) {
@@ -108,9 +155,11 @@
     const list = findListContainer();
     if (!list) return null;
 
-    const cards = Array.from(list.children).filter(
-      (el) => el.tagName === 'LI' && el.dataset.ghbsOwned !== 'true' && (el.classList.contains('contrib-person') || el.querySelector('h3'))
+    const allLis = Array.from(list.children).filter(
+      (el) => el.tagName === 'LI' && el.dataset.ghbsOwned !== 'true'
     );
+    const cards = allLis.filter(isLoadedCard);
+    const placeholders = allLis.filter((el) => !isLoadedCard(el));
 
     if (cards.length === 0) return null;
 
@@ -155,6 +204,12 @@
     list.classList.remove('ghbs-mode-split', 'ghbs-mode-human', 'ghbs-mode-bot', 'ghbs-mode-all');
     list.classList.add(`ghbs-mode-${mode}`);
 
+    // 未懒加载完成的占位 li 放在最底部，保留其滚动加载能力
+    for (const ph of placeholders) {
+      if (mode === 'split') ph.style.order = '50';
+      else ph.style.removeProperty('order');
+    }
+
     let humanIndex = 0;
     let botIndex = 0;
 
@@ -171,10 +226,10 @@
       if (mode === 'split') {
         if (cls.isBot) {
           botIndex += 1;
-          card.style.order = String(40);
+          card.style.order = '40';
         } else {
           humanIndex += 1;
-          card.style.order = String(20);
+          card.style.order = '20';
         }
       } else if (mode === 'human') {
         card.style.removeProperty('order');
@@ -187,7 +242,10 @@
       }
 
       // 注入徽章 + 快速切换覆盖按钮
-      const headerTarget = (nameLink && nameLink.parentElement) || card.querySelector('h3');
+      const headerTarget =
+        (nameLink && nameLink.parentElement) ||
+        card.querySelector('h2 > span, h2, h3');
+
       if (headerTarget) {
         const badgeWrap = ui.createBadge(cls, {
           allowOverride: true,
@@ -212,7 +270,6 @@
       return `${detector.formatNumber(bucket.commits)} commits${pct} · ${detector.formatNumber(bucket.additions)} ++ / ${detector.formatNumber(bucket.deletions)} --`;
     };
 
-    // 分组模式注入两个全宽区域头
     if (mode === 'split') {
       const humanHeader = ui.createSectionHeader('li', {
         kind: 'human',
@@ -224,7 +281,7 @@
       list.appendChild(humanHeader);
 
       if (counts.human === 0) {
-        const emptyH = ui.createEl('li', 'ghbs-empty-note', '当前时间范围内暂无人类贡献者');
+        const emptyH = ui.createEl('li', 'ghbs-empty-note', '当前已加载的贡献者中暂无人类账号');
         emptyH.dataset.ghbsOwned = 'true';
         emptyH.style.order = '21';
         list.appendChild(emptyH);
@@ -247,22 +304,25 @@
       list.appendChild(botHeader);
 
       if (totalBotCount === 0) {
-        const emptyB = ui.createEl('li', 'ghbs-empty-note', '未检测到 Bot 或 AI Agent 账号（也可在任意卡片上点击「标为 Bot」手动归类）');
+        const emptyB = ui.createEl(
+          'li',
+          'ghbs-empty-note',
+          '当前已加载卡片中未检测到 Bot / AI Agent（向下滚动加载更多，或悬停卡片点击「标为 Bot」）'
+        );
         emptyB.dataset.ghbsOwned = 'true';
         emptyB.style.order = '41';
         list.appendChild(emptyB);
       }
     } else if (mode === 'bot' && totalBotCount === 0) {
-      const empty = ui.createEl('li', 'ghbs-empty-note', '当前贡献者列表中未检测到 Bot 或 AI Agent 账号');
+      const empty = ui.createEl('li', 'ghbs-empty-note', '当前已加载的贡献者中未检测到 Bot / AI Agent 账号');
       empty.dataset.ghbsOwned = 'true';
       list.appendChild(empty);
     } else if (mode === 'human' && counts.human === 0) {
-      const empty = ui.createEl('li', 'ghbs-empty-note', '当前贡献者列表中未检测到人类账号');
+      const empty = ui.createEl('li', 'ghbs-empty-note', '当前已加载的贡献者中未检测到人类账号');
       empty.dataset.ghbsOwned = 'true';
       list.appendChild(empty);
     }
 
-    // 渲染顶部工具栏
     let extraSummary = '';
     if (totalCommits > 0) {
       const humanPct = ((metrics.human.commits / totalCommits) * 100).toFixed(1);
@@ -274,7 +334,7 @@
     const existingToolbar = document.querySelector(`[data-ghbs-id="${TOOLBAR_ID}"]`);
     const toolbar = ui.renderToolbar(existingToolbar, {
       id: TOOLBAR_ID,
-      title: '贡献者分类',
+      title: 'git-blame-ai · 贡献者分类',
       mode,
       counts,
       extraSummary,

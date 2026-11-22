@@ -9,26 +9,39 @@
   }
 
   function findRowsAndContainer() {
-    // 1. 经典 GitHub PR / Issues 列表
+    // 1. 2026 新版 React PR / Issues ListView（ul[data-listview-component="items-list"]）
+    const reactList = document.querySelector('ul[data-listview-component="items-list"]');
+    if (reactList) {
+      const rows = Array.from(reactList.children).filter(
+        (el) => el.tagName === 'LI' && el.dataset.ghbsOwned !== 'true'
+      );
+      if (rows.length > 0) {
+        return { container: reactList, rows, itemTag: 'li', style: 'modern' };
+      }
+    }
+
+    // 2. 经典 GitHub PR / Issues 列表
     const classicContainer = document.querySelector('.js-navigation-container.js-active-navigation-container');
     if (classicContainer) {
       const rows = Array.from(classicContainer.children).filter(
-        (el) => el.dataset.ghbsOwned !== 'true' && (el.classList.contains('js-issue-row') || /^issue_\d+$/.test(el.id || ''))
+        (el) =>
+          el.dataset.ghbsOwned !== 'true' &&
+          (el.classList.contains('js-issue-row') || /^issue_\d+$/.test(el.id || ''))
       );
       if (rows.length > 0) {
         return { container: classicContainer, rows, itemTag: 'div', style: 'classic' };
       }
     }
 
-    // 2. 新版 React Issues / PRs 列表
-    const modernRows = Array.from(
+    // 3. 兜底 React ListItem
+    const fallbackRows = Array.from(
       document.querySelectorAll('li[data-listview-item-id], li[class*="ListItem-module__listItem"]')
     ).filter((el) => el.dataset.ghbsOwned !== 'true');
 
-    if (modernRows.length > 0 && modernRows[0].parentElement) {
+    if (fallbackRows.length > 0 && fallbackRows[0].parentElement) {
       return {
-        container: modernRows[0].parentElement,
-        rows: modernRows,
+        container: fallbackRows[0].parentElement,
+        rows: fallbackRows,
         itemTag: 'li',
         style: 'modern'
       };
@@ -37,9 +50,6 @@
     return null;
   }
 
-  /**
-   * 从 PR/Issue 的筛选查询链接 ?q=...author:app/dependabot 中提取精确作者与是否 App
-   */
   function parseAuthorFromQueryHref(href) {
     if (!href) return null;
     try {
@@ -61,6 +71,7 @@
 
   function extractIssuePrAuthor(row) {
     const authorLink =
+      row.querySelector('a[data-testid="author-filter-link"]') ||
       row.querySelector('a[data-testid="issue-author-link"]') ||
       row.querySelector('a[data-hovercard-type="user"][href*="author"]') ||
       row.querySelector('.opened-by a[data-hovercard-type]') ||
@@ -82,15 +93,18 @@
       row.querySelector('.opened-by img.avatar') ||
       row.querySelector('img.avatar');
 
-    const hasBotBadge = Array.from(row.querySelectorAll('.opened-by span, [class*="Label"]')).some((el) =>
-      /^(bot|app)$/i.test((el.textContent || '').trim())
-    );
+    const hasBotBadge = Array.from(
+      row.querySelectorAll('.opened-by span, [class*="Label"], [data-component="Label"]')
+    ).some((el) => /^(bot|app)$/i.test((el.textContent || '').trim()));
 
     return {
       authorLink,
       signals: {
         login,
-        href: parsedFromQuery && parsedFromQuery.isApp ? `/apps/${parsedFromQuery.login.replace(/\[bot\]$/i, '')}` : href,
+        href:
+          parsedFromQuery && parsedFromQuery.isApp
+            ? `/apps/${parsedFromQuery.login.replace(/\[bot\]$/i, '')}`
+            : href,
         avatarSrc: avatarImg ? avatarImg.getAttribute('src') || '' : '',
         hovercardType: authorLink ? authorLink.getAttribute('data-hovercard-type') || '' : '',
         hovercardUrl: authorLink ? authorLink.getAttribute('data-hovercard-url') || '' : '',
@@ -175,6 +189,7 @@
 
       const metaTarget =
         (authorLink && authorLink.parentElement) ||
+        row.querySelector('[data-testid="timestamp-container"]') ||
         row.querySelector('.opened-by');
 
       if (metaTarget && cls.baseLogin) {
@@ -221,11 +236,14 @@
     }
 
     // 注入工具栏到列表外框上方
-    const boxAnchor = container.closest('.Box') || container.parentElement;
+    const boxAnchor =
+      container.closest('.Box') ||
+      container.closest('[data-listview-component="list-view"]')?.parentElement ||
+      container.parentElement;
     const existingToolbar = document.querySelector(`[data-ghbs-id="${TOOLBAR_ID}"]`);
     const toolbar = ui.renderToolbar(existingToolbar, {
       id: TOOLBAR_ID,
-      title: isPrPage ? 'Pull Requests 来源分组' : 'Issues 来源分组',
+      title: isPrPage ? 'git-blame-ai · Pull Requests 分组' : 'git-blame-ai · Issues 分组',
       mode,
       counts,
       extraSummary:

@@ -202,6 +202,8 @@
 
         // 注入徽章
         const target =
+          row.querySelector('[class*="CommitAttributionContainer"]') ||
+          row.querySelector('[data-testid="author-avatar"]')?.parentElement ||
           row.querySelector('[data-testid="commit-row-author"]')?.parentElement ||
           row.querySelector('h4') ||
           row.querySelector('.f6') ||

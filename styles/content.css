@@ -295,27 +295,36 @@
   font-size: 11px;
 }
 
-/* ===== /graphs/contributors 网格布局 ===== */
+/* ===== /graphs/contributors 网格布局（兼容 2026 React ul 与旧版 ol） ===== */
+ul.ghbs-contrib-list,
 ol.ghbs-contrib-list {
   display: grid !important;
   grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  grid-auto-rows: auto !important;
   gap: 14px !important;
   padding-left: 0 !important;
+  list-style: none !important;
 }
 
 @media (max-width: 768px) {
+  ul.ghbs-contrib-list,
   ol.ghbs-contrib-list {
     grid-template-columns: 1fr !important;
   }
 }
 
+ul.ghbs-contrib-list > li.ghbs-section-header,
 ol.ghbs-contrib-list > li.ghbs-section-header {
   grid-column: 1 / -1 !important;
   float: none !important;
   width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+  align-self: start !important;
   margin: 4px 0 0 0 !important;
 }
 
+ul.ghbs-contrib-list > li.ghbs-item,
 ol.ghbs-contrib-list > li.ghbs-item {
   float: none !important;
   width: 100% !important;
@@ -323,10 +332,12 @@ ol.ghbs-contrib-list > li.ghbs-item {
   box-sizing: border-box !important;
 }
 
+ul.ghbs-contrib-list > li.ghbs-item--ai-agent [class*="ChartCardContainerBordered"],
 ol.ghbs-contrib-list > li.ghbs-item--ai-agent {
   border-color: var(--ghbs-ai-border) !important;
 }
 
+ul.ghbs-contrib-list > li.ghbs-item--bot [class*="ChartCardContainerBordered"],
 ol.ghbs-contrib-list > li.ghbs-item--bot {
   border-color: var(--ghbs-bot-border) !important;
 }
@@ -335,12 +346,16 @@ ol.ghbs-contrib-list > li.ghbs-item--bot {
 ul.ghbs-sidebar-list {
   display: flex !important;
   flex-direction: column;
+  padding-left: 0 !important;
+  list-style: none !important;
 }
 
 ul.ghbs-sidebar-list.ghbs-sidebar-grid {
+  display: flex !important;
   flex-direction: row !important;
   flex-wrap: wrap !important;
   align-items: center;
+  gap: 6px !important;
 }
 
 ul.ghbs-sidebar-list > li.ghbs-section-header {
@@ -448,14 +463,17 @@ ul.ghbs-sidebar-grid > li.ghbs-sidebar-item.ghbs-item--bot img.avatar {
 
 .ghbs-override-btn {
   opacity: 0;
-  padding: 1px 6px;
+  max-width: 0;
+  overflow: hidden;
+  padding: 0;
+  border: 0 solid var(--ghbs-border);
   border-radius: 4px;
-  border: 1px solid var(--ghbs-border);
   background: var(--ghbs-bg-card);
   color: var(--ghbs-fg-muted);
   font-size: 10px;
   font-weight: 500;
   line-height: 1.5;
+  white-space: nowrap;
   cursor: pointer;
   transition: opacity 0.15s ease, color 0.12s ease, border-color 0.12s ease;
 }
@@ -465,6 +483,9 @@ ul.ghbs-sidebar-grid > li.ghbs-sidebar-item.ghbs-item--bot img.avatar {
 .ghbs-issue-item:hover .ghbs-override-btn,
 .ghbs-override-btn:focus-visible {
   opacity: 1;
+  max-width: 120px;
+  padding: 1px 6px;
+  border-width: 1px;
 }
 
 .ghbs-override-btn:hover {

@@ -4,12 +4,16 @@
   const TOOLBAR_ID = 'ghbs-sidebar-contributors-toolbar';
 
   function findSidebarCell() {
-    const sidebar = document.querySelector('.Layout-sidebar') || document.querySelector('.repository-content');
-    if (!sidebar) return null;
-
-    const links = sidebar.querySelectorAll('h2 a[href*="/graphs/contributors"], h3 a[href*="/graphs/contributors"]');
+    // 兼容 2026 新版 React 侧边栏（div[class*="sidebarSection"]）与旧版 .BorderGrid-cell
+    const links = document.querySelectorAll(
+      'h2 a[href*="/graphs/contributors"], h3 a[href*="/graphs/contributors"]'
+    );
     for (const link of links) {
-      const cell = link.closest('.BorderGrid-cell') || link.closest('div');
+      const cell =
+        link.closest('[class*="sidebarSection"]') ||
+        link.closest('.BorderGrid-cell') ||
+        link.closest('section') ||
+        link.closest('div');
       if (cell && cell.querySelector('ul')) {
         return { cell, heading: link.closest('h2, h3') };
       }
@@ -26,7 +30,10 @@
       li.querySelector('a[href^="/apps/"]') ||
       li.querySelector('a[data-hovercard-type]') ||
       li.querySelector('a[href^="/"]');
-    const img = li.querySelector('img.avatar') || li.querySelector('img[src*="avatars.githubusercontent.com"]');
+    const img =
+      li.querySelector('img[data-testid="github-avatar"]') ||
+      li.querySelector('img.avatar') ||
+      li.querySelector('img[src*="avatars.githubusercontent.com"]');
     const nameSpan = li.querySelector('strong, span.color-fg-default');
 
     let login = '';
@@ -98,6 +105,7 @@
     if (items.length === 0) return null;
 
     const isAvatarGrid =
+      /avatarGrid/i.test(ul.className || '') ||
       ul.classList.contains('flex-wrap') ||
       items.every((li) => (li.textContent || '').trim().length === 0);
 
@@ -128,7 +136,6 @@
       li.classList.add(`ghbs-item--${cls.kind}`);
       li.dataset.ghbsKind = cls.kind;
 
-      // 清理行内旧徽章
       li.querySelectorAll('[data-ghbs-owned="true"]').forEach((el) => el.remove());
 
       if (link) {
@@ -175,7 +182,7 @@
       ul.appendChild(bHeader);
 
       if (totalBots === 0) {
-        const none = ui.createEl('li', 'ghbs-empty-note ghbs-empty-note--compact', '暂无 Bot / Agent');
+        const none = ui.createEl('li', 'ghbs-empty-note ghbs-empty-note--compact', '前排暂无 Bot / Agent');
         none.dataset.ghbsOwned = 'true';
         none.style.order = '41';
         ul.appendChild(none);
